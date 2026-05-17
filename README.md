@@ -1,6 +1,6 @@
 # Gerenciador de Biblioteca Pessoal
 
-Um projeto de aplicação Web MVC com Spring Boot e MongoDB, focado nas melhores práticas de teste de software automatizado sem a utilização de Mocks explícitos.
+Um projeto de aplicação Web MVC com Spring Boot e MongoDB, focado nas melhores práticas de teste de software automatizado.
 
 ## Tecnologias Utilizadas
 - **Java 17**
