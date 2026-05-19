@@ -4,21 +4,26 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Biblioteca Pessoal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
 <body>
+
     <nav class="navbar" sec:authorize="isAuthenticated()">
         <a href="/books" class="navbar-brand">Biblioteca Pessoal</a>
-        <div class="nav-links">
-            <span sec:authentication="name" style="margin-right: 15px; color: var(--secondary);"></span>
+        <div class="nav-right">
+            <div class="nav-chip" sec:authentication="name"></div>
             <form th:action="@{/logout}" method="post" style="display:inline;">
-                <button type="submit" class="btn btn-secondary" style="padding: 0.5rem 1rem;">Sair</button>
+                <button type="submit" class="btn btn-outline btn-sm">Sair</button>
             </form>
         </div>
     </nav>
+
     <main class="container">
         <div layout:fragment="content"></div>
     </main>
+
 </body>
 </html>

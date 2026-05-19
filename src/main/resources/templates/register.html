@@ -3,37 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registro - Biblioteca Pessoal</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <title>Criar Conta — Biblioteca Pessoal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" th:href="@{/css/style.css}">
 </head>
-<body style="justify-content: center; align-items: center;">
-    <div class="glass-card" style="width: 100%; max-width: 400px;">
-        <h1 style="text-align: center; margin-bottom: 2rem;">Nova Conta</h1>
-        
-        <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+<body class="auth-page">
 
-        <form th:action="@{/register}" th:object="${user}" method="post">
-            <div class="form-group">
-                <label for="name">Nome Completo</label>
-                <input type="text" id="name" th:field="*{name}" class="form-control" required>
-                <div class="error-text" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
-            </div>
-            <div class="form-group">
-                <label for="username">Usuário</label>
-                <input type="text" id="username" th:field="*{username}" class="form-control" required>
-                <div class="error-text" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
-            </div>
-            <div class="form-group">
-                <label for="password">Senha</label>
-                <input type="password" id="password" th:field="*{password}" class="form-control" required>
-                <div class="error-text" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-            </div>
-            <button type="submit" class="btn btn-secondary" style="width: 100%;">Registrar</button>
-        </form>
-        <p style="text-align: center; margin-top: 1.5rem;">
-            Já possui conta? <a th:href="@{/login}" style="color: var(--primary);">Faça Login</a>
+    <div class="auth-wrapper">
+
+        <div class="auth-header">
+            <div class="auth-logo-mark">✦</div>
+            <h1>Criar conta</h1>
+            <p>Monte sua biblioteca pessoal</p>
+        </div>
+
+        <div class="auth-card">
+
+            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+
+            <form th:action="@{/register}" th:object="${user}" method="post">
+
+                <div class="form-group">
+                    <label for="name">Nome Completo</label>
+                    <input type="text" id="name" th:field="*{name}" class="form-control"
+                           placeholder="Seu nome completo" required autocomplete="name">
+                    <div class="error-text" th:if="${#fields.hasErrors('name')}" th:errors="*{name}"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="username">Usuário</label>
+                    <input type="text" id="username" th:field="*{username}" class="form-control"
+                           placeholder="nome de usuário" required autocomplete="username">
+                    <div class="error-text" th:if="${#fields.hasErrors('username')}" th:errors="*{username}"></div>
+                </div>
+
+                <div class="form-group" style="margin-bottom:0;">
+                    <label for="password">Senha</label>
+                    <input type="password" id="password" th:field="*{password}" class="form-control"
+                           placeholder="••••••••" required autocomplete="new-password">
+                    <div class="error-text" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                </div>
+
+                <button type="submit" class="btn btn-primary btn-full" style="margin-top:1.5rem; padding-block:.85rem; font-size:1rem;">
+                    Criar conta
+                </button>
+
+            </form>
+        </div>
+
+        <p class="auth-footer">
+            Já possui conta? <a th:href="@{/login}">Fazer login</a>
         </p>
+
     </div>
+
 </body>
 </html>
