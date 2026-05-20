@@ -1,0 +1,8 @@
+{
+  "ISBN:9780132350884": {
+    "title": "Clean Code",
+    "authors": [{ "name": "Robert C. Martin" }],
+    "publishers": [{ "name": "Prentice Hall" }],
+    "publish_date": "2008"
+  }
+}

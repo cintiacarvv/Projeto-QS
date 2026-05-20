@@ -19,9 +19,12 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import com.github.tomakehurst.wiremock.junit5.WireMockTest;
 
-@SpringBootTest
+
+@SpringBootTest(properties = {"api.openlibrary.url=http://localhost:8090"})
 @AutoConfigureMockMvc
+@WireMockTest(httpPort = 8090)
 class BookControllerE2ETest extends AbstractIntegrationTest {
 
     @Autowired
@@ -43,6 +46,12 @@ class BookControllerE2ETest extends AbstractIntegrationTest {
         User testUser = new User("Test User", "tester", passwordEncoder.encode("password"));
         userRepository.save(testUser);
     }
+
+    @AfterEach
+    void tearDown() {
+    userRepository.deleteAll();
+    bookRepository.deleteAll();
+}
 
     @Test
     void listBooks_ShouldReturnRedirect_WhenNotAuthenticated() throws Exception {
