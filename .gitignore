@@ -1,1 +1,23 @@
+# Maven - pasta gerada automaticamente na compilação (não deve ir para o git)
 target/
+
+# IDE - IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# IDE - VS Code
+.vscode/
+
+# IDE - Eclipse
+.classpath
+.project
+.settings/
+
+# Logs
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db

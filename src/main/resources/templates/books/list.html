@@ -1,47 +1,68 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
-<head>
-    <title>Meus Livros</title>
-</head>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head><title>Meus Livros</title></head>
 <body>
-    <div layout:fragment="content">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+<div layout:fragment="content">
+
+    <div class="page-header">
+        <div>
             <h2>Meus Livros</h2>
-            <a th:href="@{/books/add}" class="btn btn-primary">+ Novo Livro</a>
+            <span class="book-count"
+                  th:unless="${books.empty}"
+                  th:text="${books.size()} + ' obra(s) na coleção'"></span>
         </div>
-        
-        <div class="glass-card">
-            <div th:if="${books.empty}" style="text-align: center; color: var(--text-muted); padding: 2rem;">
-                Você ainda não possui livros cadastrados.
-            </div>
-            
-            <table class="table" th:unless="${books.empty}">
-                <thead>
-                    <tr>
-                        <th>Título</th>
-                        <th>Autor</th>
-                        <th>Ano</th>
-                        <th>Status</th>
-                        <th>Ações</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr th:each="book : ${books}">
-                        <td th:text="${book.title}">Título</td>
-                        <td th:text="${book.author}">Autor</td>
-                        <td th:text="${book.publishedYear}">Ano</td>
-                        <td>
-                            <span th:if="${book.read}" style="color: var(--secondary); font-weight: 600;">Lido</span>
-                            <span th:unless="${book.read}" style="color: var(--primary); font-weight: 600;">Pendente</span>
-                        </td>
-                        <td>
-                            <a th:href="@{/books/edit/{id}(id=${book.id})}" class="btn btn-secondary" style="padding: 0.25rem 0.75rem; font-size: 0.875rem; margin-right: 0.5rem;">Editar</a>
-                            <a th:href="@{/books/delete/{id}(id=${book.id})}" class="btn btn-danger" style="padding: 0.25rem 0.75rem; font-size: 0.875rem;" onclick="return confirm('Tem certeza?');">Excluir</a>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <a th:href="@{/books/add}" class="btn btn-primary">
+            + Adicionar Livro
+        </a>
     </div>
+
+    <div class="glass-card">
+
+        <!-- VAZIO -->
+        <div th:if="${books.empty}" class="empty-state">
+            <div class="empty-icon">📖</div>
+            <p>Sua coleção está vazia por enquanto.</p>
+            <a th:href="@{/books/add}" class="btn btn-primary">Adicionar primeiro livro</a>
+        </div>
+
+        <!-- TABELA -->
+        <table class="table" th:unless="${books.empty}">
+            <thead>
+                <tr>
+                    <th>Título</th>
+                    <th>Autor</th>
+                    <th>Ano</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr th:each="book : ${books}">
+                    <td th:text="${book.title}">Título</td>
+                    <td th:text="${book.author}" style="color:var(--txt2);">Autor</td>
+                    <td th:text="${book.publishedYear}" style="color:var(--txt2);">Ano</td>
+                    <td>
+                        <span th:if="${book.read}"     class="badge badge-read">Lido</span>
+                        <span th:unless="${book.read}" class="badge badge-pending">Pendente</span>
+                    </td>
+                    <td>
+                        <div class="table-actions">
+                            <a th:href="@{/books/edit/{id}(id=${book.id})}"
+                               class="btn btn-secondary btn-sm">Editar</a>
+                            <a th:href="@{/books/delete/{id}(id=${book.id})}"
+                               class="btn btn-danger btn-sm"
+                               onclick="return confirm('Excluir este livro da coleção?');">Excluir</a>
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+    </div>
+
+</div>
 </body>
 </html>

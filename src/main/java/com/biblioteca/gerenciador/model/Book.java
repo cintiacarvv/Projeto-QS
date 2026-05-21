@@ -20,14 +20,14 @@ public class Book {
     
     private String publisher;
     
-    private Integer publishedYear;
+    private int publishedYear;
     
     private boolean read;
 
     // Constructors
     public Book() {}
 
-    public Book(String title, String author, String isbn, String publisher, Integer publishedYear, boolean read) {
+    public Book(String title, String author, String isbn, String publisher, int publishedYear, boolean read) {
         this.title = title;
         this.author = author;
         this.isbn = isbn;
@@ -47,8 +47,8 @@ public class Book {
     public void setIsbn(String isbn) { this.isbn = isbn; }
     public String getPublisher() { return publisher; }
     public void setPublisher(String publisher) { this.publisher = publisher; }
-    public Integer getPublishedYear() { return publishedYear; }
-    public void setPublishedYear(Integer publishedYear) { this.publishedYear = publishedYear; }
+    public int getPublishedYear() { return publishedYear; }
+    public void setPublishedYear(int publishedYear) { this.publishedYear = publishedYear; }
     public boolean isRead() { return read; }
     public void setRead(boolean read) { this.read = read; }
 }

@@ -1,64 +1,89 @@
 <!DOCTYPE html>
-<html lang="pt-BR" xmlns:th="http://www.thymeleaf.org" xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout" layout:decorate="~{layout}">
-<head>
-    <title>Gerenciar Livro</title>
-</head>
+<html lang="pt-BR"
+      xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{layout}">
+<head><title>Gerenciar Livro</title></head>
 <body>
-    <div layout:fragment="content">
-        <h2 style="margin-bottom: 2rem;" th:text="${book.id == null ? 'Adicionar Livro' : 'Editar Livro'}">Livro</h2>
-        
-        <div class="glass-card" style="margin-bottom: 2rem;" th:if="${book.id == null}">
-            <h3 style="margin-bottom: 1rem; color: var(--text-light); font-size: 1.2rem;">Busca por ISBN</h3>
-            <form th:action="@{/books/add}" method="get" style="display: flex; gap: 1rem;">
-                <input type="text" name="isbn" class="form-control" placeholder="Digite o ISBN (ex: 0451526538)" style="flex-grow: 1;">
-                <button type="submit" class="btn btn-secondary">Buscar API</button>
-            </form>
-            <div th:if="${successMessage}" class="alert alert-success" style="margin-top: 1rem;" th:text="${successMessage}"></div>
-            <div th:if="${errorMessage}" class="alert alert-danger" style="margin-top: 1rem;" th:text="${errorMessage}"></div>
-        </div>
+<div layout:fragment="content">
 
-        <div class="glass-card">
-            <form th:action="@{${book.id == null ? '/books/add' : '/books/edit/' + book.id}}" th:object="${book}" method="post">
-                <div class="form-group">
-                    <label for="title">Título *</label>
-                    <input type="text" id="title" th:field="*{title}" class="form-control" required>
-                    <div class="error-text" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="author">Autor *</label>
-                    <input type="text" id="author" th:field="*{author}" class="form-control" required>
-                    <div class="error-text" th:if="${#fields.hasErrors('author')}" th:errors="*{author}"></div>
-                </div>
-                
-                <div class="form-group">
-                    <label for="isbn">ISBN</label>
-                    <input type="text" id="isbn" th:field="*{isbn}" class="form-control">
-                </div>
-                
-                <div style="display: flex; gap: 1rem;">
-                    <div class="form-group" style="flex: 1;">
-                        <label for="publisher">Editora</label>
-                        <input type="text" id="publisher" th:field="*{publisher}" class="form-control">
-                    </div>
-                    
-                    <div class="form-group" style="flex: 1;">
-                        <label for="publishedYear">Ano de Publicação</label>
-                        <input type="number" id="publishedYear" th:field="*{publishedYear}" class="form-control">
-                    </div>
-                </div>
-                
-                <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem; margin-top: 1rem;">
-                    <input type="checkbox" id="read" th:field="*{read}" style="width: 1.2rem; height: 1.2rem; accent-color: var(--primary);">
-                    <label for="read" style="margin: 0; color: var(--text-light);">Já li este livro</label>
-                </div>
-                
-                <div style="margin-top: 2rem; display: flex; gap: 1rem;">
-                    <button type="submit" class="btn btn-primary" style="flex: 1;">Salvar</button>
-                    <a th:href="@{/books}" class="btn btn-secondary" style="flex: 1; text-align: center;">Cancelar</a>
-                </div>
-            </form>
-        </div>
+    <div class="page-header">
+        <h2 th:text="${book.id == null ? 'Adicionar Livro' : 'Editar Livro'}">Livro</h2>
+        <a th:href="@{/books}" class="btn btn-outline btn-sm">← Voltar</a>
     </div>
+
+    <!-- BUSCA ISBN (só em novo livro) -->
+    <div class="glass-card isbn-search" th:if="${book.id == null}">
+        <div class="section-tag">⚡ Busca Rápida</div>
+        <p style="font-size:.88rem; color:var(--txt2); margin-bottom:.9rem;">
+            Preencha os dados automaticamente pelo ISBN
+        </p>
+        <form th:action="@{/books/add}" method="get">
+            <div class="isbn-row">
+                <input type="text" name="isbn" class="form-control"
+                       placeholder="ISBN — ex: 0451526538">
+                <button type="submit" class="btn btn-primary">Buscar</button>
+            </div>
+        </form>
+        <div th:if="${successMessage}" class="alert alert-success" style="margin-top:1rem;" th:text="${successMessage}"></div>
+        <div th:if="${errorMessage}"   class="alert alert-danger"  style="margin-top:1rem;" th:text="${errorMessage}"></div>
+    </div>
+
+    <!-- FORMULÁRIO PRINCIPAL -->
+    <div class="glass-card">
+        <div class="section-label">Dados do Livro</div>
+
+        <form th:action="@{${book.id == null ? '/books/add' : '/books/edit/' + book.id}}"
+              th:object="${book}" method="post">
+
+            <div class="form-group">
+                <label for="title">Título *</label>
+                <input type="text" id="title" th:field="*{title}" class="form-control"
+                       placeholder="Título do livro" required>
+                <div class="error-text" th:if="${#fields.hasErrors('title')}" th:errors="*{title}"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="author">Autor *</label>
+                <input type="text" id="author" th:field="*{author}" class="form-control"
+                       placeholder="Nome do autor" required>
+                <div class="error-text" th:if="${#fields.hasErrors('author')}" th:errors="*{author}"></div>
+            </div>
+
+            <div class="form-group">
+                <label for="isbn">ISBN</label>
+                <input type="text" id="isbn" th:field="*{isbn}" class="form-control"
+                       placeholder="ex: 0451526538">
+            </div>
+
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="publisher">Editora</label>
+                    <input type="text" id="publisher" th:field="*{publisher}" class="form-control"
+                           placeholder="Nome da editora">
+                </div>
+                <div class="form-group">
+                    <label for="publishedYear">Ano de Publicação</label>
+                    <input type="number" id="publishedYear" th:field="*{publishedYear}" class="form-control"
+                           placeholder="ex: 2024" min="0" max="2099">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="checkbox-wrap">
+                    <input type="checkbox" id="read" th:field="*{read}">
+                    <label for="read">Já li este livro</label>
+                </div>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Salvar Livro</button>
+                <a th:href="@{/books}" class="btn btn-outline">Cancelar</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
 </body>
 </html>
