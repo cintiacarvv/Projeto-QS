@@ -17,15 +17,17 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /*
- * Testa o AuthController — responsável pelas páginas de login e cadastro.
+ * Testa o AuthController — páginas de login e cadastro (Caixa Preta / E2E).
  *
- * Ferramentas usadas:
+ * Ferramentas:
  *  - @SpringBootTest: sobe o contexto completo do Spring (todos os beans reais)
  *  - @AutoConfigureMockMvc: configura o MockMvc para simular requisições HTTP
  *  - AbstractIntegrationTest: sobe MongoDB real via Testcontainers (Docker)
  *  - MockMvc: simula o navegador — faz GET/POST sem precisar de servidor rodando
  *
  * Sem nenhum Mock de componente — tudo é real: controller, service, banco.
+ * A autenticação é verificada diretamente pelo fluxo real de POST /login,
+ * sem qualquer atalho sintético de autenticação.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -40,7 +42,6 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Limpa o banco após cada teste para evitar interferência entre eles
     @AfterEach
     void tearDown() {
         userRepository.deleteAll();
@@ -69,8 +70,7 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
     @Test
     /*
      * Qualquer pessoa pode acessar o formulário de cadastro.
-     * O controller coloca um objeto User vazio no model — o Thymeleaf precisa
-     * dele para montar os campos do formulário HTML (th:object="${user}").
+     * O controller coloca um objeto User vazio no model.
      * Cobre: o método registerPage() do AuthController.
      */
     void registerPage_ShouldReturnRegisterViewWithUserObject() throws Exception {
@@ -92,11 +92,6 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
      */
     void processRegistration_ShouldRedirect_WhenValidData() throws Exception {
         mockMvc.perform(post("/register")
-                        /*
-                         * csrf() adiciona o token CSRF que o Spring Security exige
-                         * em todo POST. Sem ele, o servidor rejeita com HTTP 403.
-                         * Isso não é mock — é parte real da segurança da aplicação.
-                         */
                         .with(csrf())
                         .param("name", "Maria Souza")
                         .param("username", "mariasouza")
@@ -109,8 +104,6 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
     /*
      * Cenário de erro de validação: senha com menos de 6 caracteres.
      * A anotação @Size(min=6) no model User rejeita a entrada.
-     * O controller detecta o BindingResult com erros e retorna "register"
-     * sem chamar o UserService — o usuário não é salvo.
      * Cobre: o bloco if (result.hasErrors()) do processRegistration().
      */
     void processRegistration_ShouldReturnRegister_WhenPasswordTooShort() throws Exception {
@@ -142,8 +135,7 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
     @Test
     /*
      * Cenário de username duplicado: o UserService lança IllegalArgumentException.
-     * O controller captura a exceção no bloco catch e coloca "errorMessage"
-     * no model para exibir no HTML, retornando à view "register".
+     * O controller captura a exceção e coloca "errorMessage" no model.
      * Cobre: o bloco catch (IllegalArgumentException e) do processRegistration().
      */
     void processRegistration_ShouldShowError_WhenUsernameAlreadyExists() throws Exception {
@@ -159,5 +151,49 @@ class AuthControllerE2ETest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("register"))
                 .andExpect(model().attributeExists("errorMessage"));
+    }
+
+    // =========================================================================
+    // POST /login — fluxo de autenticação real
+    // =========================================================================
+
+    @Test
+    /*
+     * Login com credenciais corretas: Spring Security autentica contra o MongoDB
+     * (Testcontainers) e redireciona para /books.
+     * Este teste prova que o fluxo real de autenticação funciona — e é
+     * exatamente o mesmo mecanismo usado nos testes de BookController
+     * para obter a sessão autenticada.
+     * Cobre: o fluxo formLogin() configurado no SecurityConfig.
+     */
+    void login_ShouldRedirectToBooks_WhenValidCredentials() throws Exception {
+        userRepository.save(
+            new User("Test User", "tester", passwordEncoder.encode("password"))
+        );
+
+        mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", "tester")
+                        .param("password", "password"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/books"));
+    }
+
+    @Test
+    /*
+     * Login com senha errada: Spring Security rejeita e redireciona para /login?error.
+     * Cobre: o caminho de falha do formLogin().
+     */
+    void login_ShouldRedirectToError_WhenInvalidCredentials() throws Exception {
+        userRepository.save(
+            new User("Test User", "tester", passwordEncoder.encode("password"))
+        );
+
+        mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", "tester")
+                        .param("password", "wrongpassword"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/login?error"));
     }
 }

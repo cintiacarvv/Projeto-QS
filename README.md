@@ -22,10 +22,10 @@ Um projeto de aplicação Web MVC com Spring Boot e MongoDB, focado nas melhores
 5. Busca automática de metadados do livro por ISBN através da OpenLibrary API.
 
 ## Estratégia de Testes Aplicada
-Conforme os requisitos do projeto, a suíte de testes cumpre a política **"No-Mocks"**, o que significa que o uso do `Mockito` está vedado. As estratégias adotadas são:
+Conforme os requisitos do projeto, a suíte de testes cumpre a política **"No-Mocks"**, o que significa que não há uso de `@MockBean`, `@Mock`, `Mockito.mock()` ou qualquer atalho sintético de autenticação (`SecurityMockMvcRequestPostProcessors.user()`). As estratégias adotadas são:
 
-- **Teste de Caixa Preta (E2E):** Três classes cobrem os controllers de ponta a ponta usando `@SpringBootTest` e `MockMvc` integrado, validando as rotas até a persistência no banco real:
-  - `AuthControllerE2ETest` — cobre login, cadastro, validações e erro de username duplicado.
+- **Teste de Caixa Preta (E2E):** Três classes cobrem os controllers de ponta a ponta usando `@SpringBootTest`, com autenticação feita via `POST /login` real — o `UsernamePasswordAuthenticationFilter` do Spring Security é exercitado, o `CustomUserDetailsService` consulta o MongoDB real (Testcontainers) e o BCrypt verifica a senha. A sessão autenticada (`MockHttpSession`) é capturada e reutilizada nos testes seguintes:
+  - `AuthControllerE2ETest` — cobre login com sucesso, login com credenciais inválidas, cadastro, validações e erro de username duplicado.
   - `BookControllerE2ETest` — cobre listagem, adição e restrição de acesso para não autenticados.
   - `BookControllerExtendedE2ETest` — cobre edição, deleção, validação de formulário e busca por ISBN via VCR declarativo.
 

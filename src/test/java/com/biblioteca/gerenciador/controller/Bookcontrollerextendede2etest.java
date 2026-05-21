@@ -11,30 +11,31 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 /*
- * Testa o BookController — rotas que ainda não tinham cobertura.
+ * Testa o BookController — rotas de edição, deleção, validação e ISBN (VCR).
  *
- * VCR com WireMock (modo declarativo — seção 2.2 da aula):
- *  Os arquivos de resposta ficam em:
- *    src/test/resources/mappings/      → define URL + status HTTP
- *    src/test/resources/__files/       → corpo da resposta (JSON gravado)
+ * Autenticação: feita via POST /login real no setUp() — sem .with(user(...)).
+ * A sessão autenticada retornada pelo Spring Security é capturada como
+ * MockHttpSession e reutilizada em todas as requisições do teste,
+ * reproduzindo o ciclo de sessão real de um navegador.
  *
+ * VCR com WireMock (modo declarativo):
+ *  Os cassetes ficam em:
+ *    src/test/resources/mappings/    → define URL + status HTTP
+ *    src/test/resources/__files/     → corpo da resposta (JSON gravado)
  *  O WireMock carrega esses arquivos automaticamente ao subir.
- *  Não inventamos respostas no código — usamos "cassetes" gravados,
- *  exatamente como o padrão VCR define.
- *
- * @SpringBootTest com a propriedade api.openlibrary.url apontando para
- * o WireMock local (porta 8090) em vez da internet real.
- * Isso garante que os testes rodam offline e de forma determinística.
+ *  A propriedade api.openlibrary.url aponta para o WireMock local (porta 8090),
+ *  garantindo que os testes rodam offline e de forma determinística.
  */
 @SpringBootTest(properties = {"api.openlibrary.url=http://localhost:8090"})
 @AutoConfigureMockMvc
@@ -53,14 +54,29 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
-    // Roda antes de cada teste: limpa o banco e cria um usuário de teste
+    // Sessão autenticada obtida após login real — reutilizada em cada teste
+    private MockHttpSession session;
+
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         userRepository.deleteAll();
         bookRepository.deleteAll();
+
+        // Salva usuário de teste com senha codificada (BCrypt real)
         userRepository.save(
             new User("Test User", "tester", passwordEncoder.encode("password"))
         );
+
+        // Login real via POST /login — captura a sessão autenticada
+        MvcResult loginResult = mockMvc.perform(post("/login")
+                        .with(csrf())
+                        .param("username", "tester")
+                        .param("password", "password"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/books"))
+                .andReturn();
+
+        session = (MockHttpSession) loginResult.getRequest().getSession(false);
     }
 
     // =========================================================================
@@ -74,8 +90,7 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
      * Cobre: o caminho onde isbn == null no showAddForm().
      */
     void showAddForm_ShouldReturnEmptyForm_WhenNoIsbn() throws Exception {
-        mockMvc.perform(get("/books/add")
-                        .with(user("tester").password("password").roles("USER")))
+        mockMvc.perform(get("/books/add").session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"))
                 .andExpect(model().attributeExists("book"));
@@ -85,18 +100,16 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
     /*
      * VCR — Cenário de SUCESSO: ISBN encontrado na API externa.
      *
-     * O WireMock intercepta a chamada HTTP que o OpenLibraryClient faria
-     * para a internet e devolve o cassete gravado em:
-     *   mappings/isbn-encontrado.json       → define a URL e o status 200
-     *   __files/isbn-encontrado-response.json → corpo da resposta real
+     * O WireMock intercepta a chamada HTTP para a internet e devolve o cassete:
+     *   mappings/isbn-encontrado.json          → define URL + status 200
+     *   __files/isbn-encontrado-response.json  → corpo da resposta gravado
      *
      * O controller recebe o livro preenchido e coloca "successMessage" no model.
      * Cobre: o caminho where foundBook != null no showAddForm().
      */
     void showAddForm_ShouldFillForm_WhenIsbnFoundInApi() throws Exception {
-        // ISBN definido no cassete: mappings/isbn-encontrado.json
         mockMvc.perform(get("/books/add")
-                        .with(user("tester").password("password").roles("USER"))
+                        .session(session)
                         .param("isbn", "9780132350884"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"))
@@ -107,18 +120,15 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
     /*
      * VCR — Cenário de ERRO 404: ISBN não encontrado na API externa.
      *
-     * O WireMock devolve o cassete:
-     *   mappings/isbn-nao-encontrado.json → status 404
-     *
-     * O OpenLibraryClient captura o WebClientResponseException (HTTP 4xx/5xx)
-     * e retorna null. O controller coloca "errorMessage" no model.
+     * O WireMock devolve o cassete com status 404.
+     * O OpenLibraryClient captura o WebClientResponseException e retorna null.
+     * O controller coloca "errorMessage" no model.
      * Cobre: o caminho where foundBook == null no showAddForm().
      * Também cobre o bloco catch(WebClientResponseException) do OpenLibraryClient.
      */
     void showAddForm_ShouldShowError_WhenIsbnNotFoundInApi() throws Exception {
-        // ISBN definido no cassete: mappings/isbn-nao-encontrado.json
         mockMvc.perform(get("/books/add")
-                        .with(user("tester").password("password").roles("USER"))
+                        .session(session)
                         .param("isbn", "0000000000"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"))
@@ -127,17 +137,17 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
 
     @Test
     /*
-     * Usuário envia o formulário de adição com campos obrigatórios em branco.
+     * Usuário envia formulário de adição com campos obrigatórios em branco.
      * As anotações @NotBlank em Book disparam o BindingResult com erros.
      * O controller retorna o formulário novamente sem salvar nada.
      * Cobre: o bloco if (result.hasErrors()) do addBook().
      */
     void addBook_ShouldReturnForm_WhenValidationFails() throws Exception {
         mockMvc.perform(post("/books/add")
-                        .with(user("tester").password("password").roles("USER"))
+                        .session(session)
                         .with(csrf())
-                        .param("title", "")   // @NotBlank violado
-                        .param("author", "")) // @NotBlank violado
+                        .param("title", "")
+                        .param("author", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"));
     }
@@ -153,13 +163,11 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
      * Cobre: o método showEditForm() e o BookService.findById().
      */
     void showEditForm_ShouldReturnFormWithBook() throws Exception {
-        // Salvamos um livro real no banco para ter um ID válido
         Book book = bookRepository.save(
             new Book("Livro Original", "Autor", "111", "Editora", 2020, false)
         );
 
-        mockMvc.perform(get("/books/edit/" + book.getId())
-                        .with(user("tester").password("password").roles("USER")))
+        mockMvc.perform(get("/books/edit/" + book.getId()).session(session))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"))
                 .andExpect(model().attributeExists("book"));
@@ -177,7 +185,7 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
         );
 
         mockMvc.perform(post("/books/edit/" + book.getId())
-                        .with(user("tester").password("password").roles("USER"))
+                        .session(session)
                         .with(csrf())
                         .param("title", "Título Atualizado")
                         .param("author", "Autor Atualizado")
@@ -201,10 +209,10 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
         );
 
         mockMvc.perform(post("/books/edit/" + book.getId())
-                        .with(user("tester").password("password").roles("USER"))
+                        .session(session)
                         .with(csrf())
-                        .param("title", "")   // @NotBlank violado
-                        .param("author", "")) // @NotBlank violado
+                        .param("title", "")
+                        .param("author", ""))
                 .andExpect(status().isOk())
                 .andExpect(view().name("books/form"));
     }
@@ -225,12 +233,10 @@ class BookControllerExtendedE2ETest extends AbstractIntegrationTest {
             new Book("Livro para Deletar", "Autor", "444", "Editora", 2022, false)
         );
 
-        mockMvc.perform(get("/books/delete/" + book.getId())
-                        .with(user("tester").password("password").roles("USER")))
+        mockMvc.perform(get("/books/delete/" + book.getId()).session(session))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/books"));
 
-        // Verificação real no banco — o livro não deve mais existir
         assert bookRepository.findById(book.getId()).isEmpty();
     }
 }
