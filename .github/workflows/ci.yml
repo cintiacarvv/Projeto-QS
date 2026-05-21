@@ -2,7 +2,7 @@ name: CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main", "release/v1.0-final" ]
+    branches: [ "main" ]
   pull_request:
     branches: [ "main" ]
 
@@ -12,6 +12,8 @@ jobs:
     
     steps:
     - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # necessário para o Sonar analisar histórico de commits
     
     - name: Set up JDK 17
       uses: actions/setup-java@v4
@@ -29,8 +31,13 @@ jobs:
         name: jacoco-report
         path: target/site/jacoco/
         
-    - name: SonarQube Scan
+    - name: SonarCloud Scan
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-      run: mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=cintiacarvv_Projeto-QS -Dsonar.organization=cintiacarvv -Dsonar.host.url=https://sonarcloud.io
+      run: |
+        mvn -B org.sonarsource.scanner.maven:sonar-maven-plugin:sonar \
+          -Dsonar.projectKey=cintiacarvv_Projeto-QS \
+          -Dsonar.organization=cintiacarvv \
+          -Dsonar.host.url=https://sonarcloud.io \
+          -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
